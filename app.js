@@ -9,6 +9,8 @@ require('dotenv').config();
 
 // Import routes
 const userRoutes = require('./src/routes/userRoutes');
+const categoryRoutes = require('./src/routes/categoryRoutes');
+const transactionRoutes = require('./src/routes/transactionRoutes');
 
 // Import middleware
 const errorHandler = require('./src/middlewares/errorHandler');
@@ -99,6 +101,8 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.use('/api/users', userRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/transactions', transactionRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -110,7 +114,9 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/health',
       users: '/api/users',
-      // TODO: Add other endpoints as they are implemented
+      categories: '/api/categories',
+      transactions: '/api/transactions',
+      dashboard: '/api/transactions/dashboard'
     }
   });
 });

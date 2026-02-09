@@ -77,7 +77,6 @@ class CategoryService {
     
     const created = [];
     
-    // Process income categories
     for (const cat of incomeCategories) {
       try {
         const category = await this.createCategory(userId, {
@@ -88,12 +87,10 @@ class CategoryService {
         });
         created.push(category);
       } catch (error) {
-        // Skip if category already exists
         continue;
       }
     }
     
-    // Process expense categories
     for (const cat of expenseCategories) {
       try {
         const category = await this.createCategory(userId, {
@@ -104,7 +101,6 @@ class CategoryService {
         });
         created.push(category);
       } catch (error) {
-        // Skip if category already exists
         continue;
       }
     }

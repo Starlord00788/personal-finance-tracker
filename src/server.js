@@ -1,5 +1,5 @@
 const app = require('../app');
-// SQLite doesn't need connection pooling like PostgreSQL
+const { USE_POSTGRESQL } = require('./config/database');
 
 const PORT = process.env.PORT || 3000;
 
@@ -9,7 +9,7 @@ const gracefulShutdown = () => {
   
   server.close(() => {
     console.log('✅ HTTP server closed');
-    console.log('✅ SQLite database closed');
+    console.log('✅ Database connections closed');
     process.exit(0);
   });
 
@@ -42,13 +42,12 @@ const server = app.listen(PORT, async () => {
 📍 Environment: ${process.env.NODE_ENV || 'development'}
 🌐 Port: ${PORT}
 🏠 Local URL: http://localhost:${PORT}
-📊 Database: SQLite
+📊 Database: ${USE_POSTGRESQL ? 'PostgreSQL (Neon)' : 'SQLite'}
 🔐 Auth: JWT + bcrypt
 📝 API Documentation: http://localhost:${PORT}/api/docs
   `);
 
-  // SQLite database is ready on startup (file-based)
-  console.log('✅ SQLite database initialized');
+  console.log(`✅ ${USE_POSTGRESQL ? 'PostgreSQL (Neon)' : 'SQLite'} database initialized`);
 });
 
 // Handle server errors

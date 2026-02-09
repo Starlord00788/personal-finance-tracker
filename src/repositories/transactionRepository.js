@@ -1,4 +1,4 @@
-const { query } = require('../config/database');
+const { query, USE_POSTGRESQL } = require('../config/database');
 
 class TransactionRepository {
   async create(transactionData) {
@@ -14,7 +14,7 @@ class TransactionRepository {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id, user_id, category_id, amount, currency, type, description,
-        transaction_date, is_recurring ? 1 : 0, recurring_frequency, notes
+        transaction_date, USE_POSTGRESQL ? !!is_recurring : (is_recurring ? 1 : 0), recurring_frequency, notes
       ]
     );
 
@@ -51,68 +51,69 @@ class TransactionRepository {
       params.push(filters.category_id);
     }
 
-    if (filters.from_date) {
+    if (filters.start_date || filters.from_date) {
       queryStr += ' AND t.transaction_date >= ?';
-      params.push(filters.from_date);
+      params.push(filters.start_date || filters.from_date);
     }
 
-    if (filters.to_date) {
+    if (filters.end_date || filters.to_date) {
       queryStr += ' AND t.transaction_date <= ?';
-      params.push(filters.to_date);
+      params.push(filters.end_date || filters.to_date);
     }
 
     if (filters.min_amount) {
       queryStr += ' AND t.amount >= ?';
-      params.push(filters.min_amount);
+      params.push(parseFloat(filters.min_amount));
     }
 
     if (filters.max_amount) {
       queryStr += ' AND t.amount <= ?';
-      params.push(filters.max_amount);
+      params.push(parseFloat(filters.max_amount));
     }
 
-    const orderBy = filters.sort_by || 'transaction_date';
+    const sortColumn = ['amount', 'transaction_date', 'created_at', 'type'].includes(filters.sort_by) ? `t.${filters.sort_by}` : 't.transaction_date';
     const sortOrder = filters.sort_order === 'asc' ? 'ASC' : 'DESC';
-    queryStr += ` ORDER BY t.${orderBy} ${sortOrder}`;
+    queryStr += ` ORDER BY ${sortColumn} ${sortOrder}, t.created_at DESC`;
 
     if (filters.limit) {
       queryStr += ' LIMIT ?';
-      params.push(parseInt(filters.limit));
+      params.push(filters.limit);
     }
 
     const result = await query(queryStr, params);
-    return result.rows;
+    return result.rows || [];
+  }
+
+  // Alias for AI service compatibility  
+  async getByUserId(userId, filters = {}) {
+    return this.findByUser(userId, filters);
   }
 
   async updateById(id, updateData) {
     const fields = [];
-    const values = [];
-
+    const params = [];
+    
     const allowedFields = [
       'category_id', 'amount', 'currency', 'type', 'description',
       'transaction_date', 'is_recurring', 'recurring_frequency', 'notes'
     ];
 
-    allowedFields.forEach(field => {
+    for (const field of allowedFields) {
       if (updateData[field] !== undefined) {
-        if (field === 'is_recurring') {
-          fields.push(`${field} = ?`);
-          values.push(updateData[field] ? 1 : 0);
-        } else {
-          fields.push(`${field} = ?`);
-          values.push(updateData[field]);
-        }
+        fields.push(`${field} = ?`);
+        params.push(field === 'is_recurring' ? (USE_POSTGRESQL ? !!updateData[field] : (updateData[field] ? 1 : 0)) : updateData[field]);
       }
-    });
+    }
 
-    if (fields.length === 0) return this.findById(id);
+    if (fields.length === 0) {
+      throw new Error('No valid fields to update');
+    }
 
-    fields.push('updated_at = CURRENT_TIMESTAMP');
-    values.push(id);
-
+    params.push(id);
+    
     await query(
-      `UPDATE transactions SET ${fields.join(', ')} WHERE id = ?`,
-      values
+      `UPDATE transactions SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      params
     );
 
     return this.findById(id);
@@ -126,46 +127,54 @@ class TransactionRepository {
   async getMonthlyStats(userId, year, month) {
     const result = await query(
       `SELECT 
-        type,
-        COUNT(*) as count,
-        SUM(amount) as total,
-        AVG(amount) as average
-       FROM transactions
+         SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as total_income,
+         SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as total_expenses,
+         COUNT(*) as transaction_count
+       FROM transactions 
        WHERE user_id = ? 
-       AND strftime('%Y', transaction_date) = ? 
-       AND strftime('%m', transaction_date) = ?
-       GROUP BY type`,
+         AND strftime('%Y', transaction_date) = ? 
+         AND strftime('%m', transaction_date) = ?`,
       [userId, year.toString(), month.toString().padStart(2, '0')]
     );
-    return result.rows;
+
+    return result.rows[0] || {
+      total_income: 0,
+      total_expenses: 0,
+      transaction_count: 0
+    };
   }
 
   async getCategoryStats(userId, from_date, to_date) {
     const result = await query(
       `SELECT 
-        c.name as category_name,
-        c.color as category_color,
-        c.icon as category_icon,
-        t.type,
-        COUNT(*) as count,
-        SUM(t.amount) as total
+         c.id, c.name, c.color,
+         SUM(t.amount) as total_amount,
+         COUNT(t.id) as transaction_count
        FROM transactions t
        JOIN categories c ON t.category_id = c.id
        WHERE t.user_id = ? 
-       AND t.transaction_date BETWEEN ? AND ?
-       GROUP BY t.category_id, t.type
-       ORDER BY total DESC`,
+         AND t.transaction_date >= ? 
+         AND t.transaction_date <= ?
+       GROUP BY c.id, c.name, c.color
+       ORDER BY total_amount DESC`,
       [userId, from_date, to_date]
     );
-    return result.rows;
+
+    return result.rows || [];
   }
 
   async getRecentTransactions(userId, limit = 10) {
-    return this.findByUser(userId, {
-      limit,
-      sort_by: 'created_at',
-      sort_order: 'desc'
-    });
+    const result = await query(
+      `SELECT t.*, c.name as category_name, c.color as category_color, c.icon as category_icon
+       FROM transactions t
+       JOIN categories c ON t.category_id = c.id
+       WHERE t.user_id = ?
+       ORDER BY t.transaction_date DESC, t.created_at DESC
+       LIMIT ?`,
+      [userId, limit]
+    );
+
+    return result.rows || [];
   }
 }
 

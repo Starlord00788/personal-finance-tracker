@@ -20,11 +20,6 @@ const errorHandler = (err, req, res, next) => {
     errors = Object.values(err.errors).map(val => val.message);
   }
   
-  if (err.code === '11000') {
-    statusCode = 409;
-    message = 'Duplicate field value entered';
-  }
-  
   if (err.name === 'CastError') {
     statusCode = 400;
     message = 'Invalid ID format';

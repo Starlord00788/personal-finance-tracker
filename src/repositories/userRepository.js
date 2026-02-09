@@ -78,6 +78,69 @@ class UserRepository {
     
     return result.rows.length > 0;
   }
+
+  async updateUserDefaultCurrency(userId, currency) {
+    const result = await query(
+      'UPDATE users SET default_currency = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [currency, userId]
+    );
+
+    return this.findById(userId);
+  }
+
+  async createOAuthUser(userData) {
+    const { first_name, last_name, email, google_id, email_verified, auth_provider } = userData;
+    
+    const result = await query(
+      `INSERT INTO users (id, first_name, last_name, email, password_hash, google_id, email_verified, auth_provider)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [require('uuid').v4(), first_name, last_name, email, '', google_id, email_verified ? 1 : 0, auth_provider || 'google']
+    );
+
+    return this.findByEmail(email);
+  }
+
+  async findByGoogleId(googleId) {
+    const result = await query(
+      'SELECT * FROM users WHERE google_id = ?',
+      [googleId]
+    );
+
+    return result.rows[0] || null;
+  }
+
+  async updateOAuthInfo(userId, oauthData) {
+    const fields = [];
+    const values = [];
+
+    if (oauthData.google_id !== undefined) {
+      fields.push('google_id = ?');
+      values.push(oauthData.google_id);
+    }
+
+    if (oauthData.auth_provider !== undefined) {
+      fields.push('auth_provider = ?');
+      values.push(oauthData.auth_provider);
+    }
+
+    if (oauthData.email_verified !== undefined) {
+      fields.push('email_verified = ?');
+      values.push(oauthData.email_verified ? 1 : 0);
+    }
+
+    if (fields.length === 0) {
+      throw new Error('No OAuth fields to update');
+    }
+
+    values.push(userId);
+
+    await query(
+      `UPDATE users SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      values
+    );
+
+    return this.findById(userId);
+  }
 }
 
 module.exports = UserRepository;

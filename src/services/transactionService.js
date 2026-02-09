@@ -95,7 +95,7 @@ class TransactionService {
   }
 
   async deleteTransaction(id, userId) {
-    const transaction = await this.getTransactionById(id, userId);
+    await this.getTransactionById(id, userId);
     return await this.transactionRepository.deleteById(id);
   }
 
@@ -103,18 +103,11 @@ class TransactionService {
     const stats = await this.transactionRepository.getMonthlyStats(userId, year, month);
     
     const overview = {
-      income: { count: 0, total: 0, average: 0 },
-      expense: { count: 0, total: 0, average: 0 },
-      balance: 0
+      income: { count: 0, total: parseFloat(stats.total_income) || 0, average: 0 },
+      expense: { count: 0, total: parseFloat(stats.total_expenses) || 0, average: 0 },
+      balance: 0,
+      transaction_count: parseInt(stats.transaction_count) || 0
     };
-    
-    stats.forEach(stat => {
-      overview[stat.type] = {
-        count: stat.count,
-        total: parseFloat(stat.total),
-        average: parseFloat(stat.average)
-      };
-    });
     
     overview.balance = overview.income.total - overview.expense.total;
     

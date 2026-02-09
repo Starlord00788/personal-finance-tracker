@@ -1,56 +1,34 @@
-# Personal Finance Tracker - Day 1 Implementation
+# Personal Finance Tracker
 
-A backend-driven financial analytics platform built with Node.js, Express.js, and PostgreSQL.
+A full-stack financial management application built with Node.js, Express.js, and PostgreSQL (Neon).
 
-## 🚀 Day 1 Complete Features
+## Features
 
-✅ **Project Setup & Architecture**
-- Clean MVC architecture with service-repository pattern
-- Express.js server with security middleware
-- PostgreSQL database design
-- JWT authentication system
-- Complete user CRUD operations
+- **JWT Authentication** with Google OAuth support
+- **Transaction Management** — income/expense tracking with categories
+- **Budget Management** — create budgets, track utilization, get alerts
+- **Multi-Currency Support** — exchange rates and currency conversion
+- **Receipt Upload** — attach receipts to transactions
+- **AI Financial Insights** — powered by OpenAI GPT-3.5
+- **Email Notifications** — budget alerts, welcome emails, monthly reports
+- **Interactive Dashboard** — single-page frontend with real-time data
 
-✅ **Database Schema**
-- Users table with UUID primary keys
-- Categories, transactions, budgets, notifications, exchange_rates tables
-- Proper foreign key relationships
-- Soft delete support
-
-✅ **Authentication System**
-- JWT-based authentication
-- bcrypt password hashing
-- Protected route middleware
-- Password strength validation
-
-✅ **User Management**
-- User registration
-- User login
-- Profile management
-- Account deletion
-- **Receipt Upload**: Store transaction receipts securely
-- **Multi-Currency Support**: Handle multiple currencies with exchange rates
-- **Anomaly Detection**: Identify unusual spending patterns
-- **AI Financial Advisor**: Get smart insights powered by OpenAI
-- **Email Notifications**: Automated alerts for budget overruns
-
-## 🛠 Tech Stack
+## Tech Stack
 
 - **Backend**: Node.js + Express.js
-- **Database**: PostgreSQL
-- **Authentication**: JWT + bcrypt
-- **File Storage**: Cloudinary
-- **Email**: SendGrid
-- **AI**: OpenAI GPT
-- **Security**: Helmet, CORS, Rate Limiting
+- **Database**: PostgreSQL (Neon) with SQLite fallback
+- **Authentication**: JWT + bcrypt + Passport (Google OAuth)
+- **AI**: OpenAI GPT-3.5-turbo
+- **Email**: Nodemailer (Gmail SMTP) / Resend / SendGrid
+- **Security**: Helmet, CORS, rate limiting, express-validator
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Clone and Install
 
 ```bash
 git clone <your-repo>
-cd Fischer\ Jordan
+cd Fischer-Jordan
 npm install
 ```
 
@@ -64,159 +42,129 @@ cp .env.example .env
 ### 3. Database Setup
 
 ```bash
-# Create PostgreSQL database
-creatdb finance_tracker
-
-# Run migrations
 npm run migrate
-
-# Seed initial data (optional)
-npm run seed
+npm run seed        # Optional: seed sample data
 ```
 
-### 4. Start Development Server
+### 4. Start Server
 
 ```bash
-npm run dev
+npm run dev         # Development (with nodemon)
+npm start           # Production
 ```
 
-Server will start at `http://localhost:3000`
+Server runs at `http://localhost:3000`
 
-## 📊 API Endpoints
+## API Endpoints
 
 ### Authentication
-- `POST /api/users/register` - Register new user
-- `POST /api/users/login` - Login user
-- `GET /api/users/profile` - Get user profile (protected)
-- `PUT /api/users/profile` - Update profile (protected)
-- `PUT /api/users/change-password` - Change password (protected)
-- `DELETE /api/users/account` - Delete account (protected)
-
-### Health Check
-- `GET /health` - Server health status
-
-*More endpoints will be added in subsequent development phases*
-
-## 📦 Database Schema
-
-### Users
-- **id**: UUID (Primary Key)
-- **name**: VARCHAR(100)
-- **email**: VARCHAR(255) UNIQUE
-- **password_hash**: VARCHAR(255)
-- **google_id**: VARCHAR(255) NULLABLE
-- **preferred_currency**: VARCHAR(3) DEFAULT 'USD'
-- **created_at**: TIMESTAMP
-- **updated_at**: TIMESTAMP
-
-### Categories
-- **id**: UUID (Primary Key)
-- **user_id**: UUID (Foreign Key)
-- **name**: VARCHAR(100)
-- **type**: ENUM('income', 'expense')
-- **is_deleted**: BOOLEAN DEFAULT FALSE
-- **created_at**: TIMESTAMP
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/users/register` | Register new user |
+| POST | `/api/users/login` | Login |
+| GET | `/api/users/profile` | Get profile |
+| PUT | `/api/users/profile` | Update profile |
+| PUT | `/api/users/change-password` | Change password |
+| DELETE | `/api/users/account` | Delete account |
 
 ### Transactions
-- **id**: UUID (Primary Key)
-- **user_id**: UUID (Foreign Key)
-- **category_id**: UUID (Foreign Key)
-- **amount**: NUMERIC(14,2)
-- **currency**: VARCHAR(3)
-- **type**: ENUM('income', 'expense')
-- **description**: TEXT
-- **transaction_date**: DATE
-- **receipt_url**: TEXT NULLABLE
-- **created_at**: TIMESTAMP
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/transactions` | Create transaction |
+| GET | `/api/transactions` | List transactions (with filters) |
+| GET | `/api/transactions/:id` | Get transaction |
+| PUT | `/api/transactions/:id` | Update transaction |
+| DELETE | `/api/transactions/:id` | Delete transaction |
+| GET | `/api/transactions/dashboard` | Dashboard data |
 
-*Additional tables: budgets, notifications, exchange_rates*
+### Categories
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/categories` | Create category |
+| GET | `/api/categories` | List categories |
+| PUT | `/api/categories/:id` | Update category |
+| DELETE | `/api/categories/:id` | Delete category |
 
-## 🚈 Development Workflow
+### Budgets
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/budgets` | Create budget |
+| GET | `/api/budgets` | List budgets |
+| GET | `/api/budgets/utilization` | Budget utilization |
+| GET | `/api/budgets/alerts` | Budget alerts |
+| GET | `/api/budgets/summary` | Budget summary |
+| GET | `/api/budgets/recommendations` | AI recommendations |
 
-### Available Scripts
+### AI Insights
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/ai/insights` | Spending insights |
+| GET | `/api/ai/budget-recommendations` | Budget recommendations |
+| POST | `/api/ai/goal-insights` | Financial goal analysis |
+| GET | `/api/ai/summary` | Financial summary |
+
+### Other
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/currencies/supported` | Supported currencies |
+| POST | `/api/currencies/convert` | Convert amount |
+| POST | `/api/receipts/upload` | Upload receipt |
+| GET | `/api/auth/google` | Google OAuth login |
+| GET | `/health` | Health check |
+
+## Environment Variables
+
+See [.env.example](.env.example) for the full template.
+
+**Required:**
+- `JWT_SECRET` — Strong secret for JWT signing
+- `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` — PostgreSQL credentials
+
+**Optional:**
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — Google OAuth
+- `OPENAI_API_KEY` — AI insights (fallback mode without it)
+- `SMTP_USER`, `SMTP_PASS` — Email notifications
+
+## Project Structure
+
+```
+├── app.js                 # Express app configuration
+├── src/
+│   ├── server.js          # Server startup
+│   ├── config/            # Database and app config
+│   ├── controllers/       # Request handlers
+│   ├── services/          # Business logic
+│   ├── repositories/      # Data access layer
+│   ├── routes/            # API route definitions
+│   ├── middlewares/        # Auth, error handling
+│   ├── validations/       # Input validation
+│   ├── utils/             # JWT, bcrypt helpers
+│   └── db/                # Migrations and seeds
+├── public/
+│   └── index.html         # Frontend dashboard
+└── uploads/               # Receipt file storage
+```
+
+## Scripts
 
 ```bash
-npm run dev          # Start development server with hot reload
-npm run start        # Start production server
-npm run test         # Run test suite
-npm run test:watch   # Run tests in watch mode
+npm run dev          # Start with nodemon (hot reload)
+npm start            # Production start
 npm run migrate      # Run database migrations
-npm run seed         # Seed database with sample data
-npm run db:setup     # Run migrations + seed
-npm run lint         # Lint and fix code
-npm run format       # Format code with Prettier
+npm run seed         # Seed sample data
+npm test             # Run tests
 ```
 
-## 📝 Environment Variables
+## Deployment
 
-See [.env.example](.env.example) for all required environment variables.
-
-Key variables:
-- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
-- `JWT_SECRET`, `JWT_EXPIRES_IN`
-- `SENDGRID_API_KEY`, `FROM_EMAIL`
-- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
-- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
-
-## 🛡 Security Features
-
-- **Helmet**: Security headers
-- **CORS**: Cross-Origin Resource Sharing
-- **Rate Limiting**: Prevent abuse
-- **JWT**: Stateless authentication
-- **bcrypt**: Password hashing
-- **Input Validation**: express-validator
-- **SQL Injection Protection**: Parameterized queries
-
-## 💯 Project Structure
-
-```
-src/
-  ├── config/          # Database and app configuration
-  ├── controllers/     # Request handlers
-  ├── services/        # Business logic
-  ├── repositories/    # Data access layer
-  ├── routes/          # API routes
-  ├── middlewares/     # Custom middleware
-  ├── validations/     # Input validation schemas
-  ├── utils/           # Utility functions
-  ├── jobs/            # Background jobs
-  └── db/              # Database migrations and seeds
-```
-
-## 💡 What's Next? (Day 2-4)
-
-- **Day 2**: Categories, Transactions, Budgets
-- **Day 3**: Dashboard, Reporting, File Upload
-- **Day 4**: OAuth, AI Features, Deployment
-
-## 🐛 Testing
-
-```bash
-npm run test         # Run all tests
-npm run test:watch   # Run tests in watch mode
-npm run test:coverage # Generate coverage report
-```
-
-## 🚀 Deployment
-
-This API is deployment-ready for:
-- **Render**
+Ready for deployment on:
+- **Render** / **Railway** / **Fly.io**
 - **AWS EC2/ECS**
-- **DigitalOcean**
+- **DigitalOcean App Platform**
 - **Heroku**
 
-## 📜 API Documentation
+Database is hosted on **Neon** (serverless PostgreSQL).
 
-- Development: `http://localhost:3000`
-- Health Check: `http://localhost:3000/health`
-- API Root: `http://localhost:3000/api`
+## Author
 
-## 🥰 Author
-
-**Palash Singhal**  
-Built with ❤️ and lots of ☕
-
----
-
-*This project demonstrates clean architecture, financial precision, and production-ready backend development practices.*
+**Palash Singhal**

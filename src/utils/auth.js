@@ -55,8 +55,8 @@ class AuthUtils {
     return {
       userId: user.id,
       email: user.email,
-      name: user.name,
-      preferredCurrency: user.preferred_currency,
+      name: [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email,
+      preferredCurrency: user.default_currency || 'USD',
       iat: Math.floor(Date.now() / 1000)
     };
   }
@@ -78,6 +78,20 @@ class AuthUtils {
     
     if (!/(?=.*\d)/.test(password)) {
       errors.push('Password must contain at least one number');
+    }
+
+    if (!/(?=.*[!@#$%^&*(),.?":{}|<>])/.test(password)) {
+      errors.push('Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)');
+    }
+
+    if (password.length > 128) {
+      errors.push('Password must be less than 128 characters');
+    }
+
+    // Check for common passwords
+    const commonPasswords = ['password', '123456', 'qwerty', 'admin', 'letmein', 'welcome'];
+    if (commonPasswords.some(common => password.toLowerCase().includes(common))) {
+      errors.push('Password cannot contain common words like "password", "123456", etc.');
     }
 
     return {

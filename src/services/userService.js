@@ -11,7 +11,7 @@ class UserService {
 
     const existingUser = await this.userRepository.findByEmail(email);
     if (existingUser) {
-      throw new Error('User with this email already exists');
+      throw new Error('Email already exists');
     }
 
     const passwordValidation = AuthUtils.validatePasswordStrength(password);
@@ -27,7 +27,7 @@ class UserService {
       email: email.toLowerCase().trim(),
       password_hash
     });
-
+    
     const sessionData = AuthUtils.createUserSession(user);
     const accessToken = AuthUtils.generateToken(sessionData);
 
@@ -61,9 +61,10 @@ class UserService {
     return {
       user: {
         id: user.id,
-        name: user.name,
+        first_name: user.first_name,
+        last_name: user.last_name,
         email: user.email,
-        preferredCurrency: user.preferred_currency
+        default_currency: user.default_currency
       },
       accessToken
     };
@@ -77,15 +78,16 @@ class UserService {
 
     return {
       id: user.id,
-      name: user.name,
+      first_name: user.first_name,
+      last_name: user.last_name,
       email: user.email,
-      preferredCurrency: user.preferred_currency,
+      default_currency: user.default_currency,
       createdAt: user.created_at
     };
   }
 
   async updateUserProfile(userId, updateData) {
-    const { name, email, preferredCurrency } = updateData;
+    const { first_name, last_name, email, default_currency } = updateData;
 
     if (email) {
       const emailExists = await this.userRepository.emailExists(email, userId);
@@ -94,11 +96,13 @@ class UserService {
       }
     }
 
-    return await this.userRepository.updateById(userId, {
-      name,
-      email,
-      preferred_currency: preferredCurrency
-    });
+    const fields = {};
+    if (first_name) fields.first_name = first_name;
+    if (last_name) fields.last_name = last_name;
+    if (email) fields.email = email;
+    if (default_currency) fields.default_currency = default_currency;
+
+    return await this.userRepository.updateById(userId, fields);
   }
 
   async changePassword(userId, currentPassword, newPassword) {

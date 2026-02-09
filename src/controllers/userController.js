@@ -59,7 +59,7 @@ class UserController {
         data: result
       });
     } catch (error) {
-      if (error.message === 'Invalid credentials') {
+      if (error.message === 'Invalid credentials' || error.message === 'Invalid email or password') {
         return res.status(401).json({
           success: false,
           message: error.message
@@ -105,7 +105,7 @@ class UserController {
 
       const userId = req.user.userId;
       const userData = req.body;
-      const user = await userService.updateProfile(userId, userData);
+      const user = await userService.updateUserProfile(userId, userData);
       
       res.json({
         success: true,
@@ -149,7 +149,7 @@ class UserController {
         message: 'Password changed successfully'
       });
     } catch (error) {
-      if (error.message === 'Invalid current password') {
+      if (error.message === 'Invalid current password' || error.message === 'Current password is incorrect') {
         return res.status(400).json({
           success: false,
           message: error.message

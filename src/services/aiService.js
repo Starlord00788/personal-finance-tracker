@@ -4,6 +4,7 @@ class AIService {
   constructor() {
     this.openai = null;
     this.isEnabled = false;
+    this.quotaExhausted = false;
     
     try {
       if (process.env.OPENAI_API_KEY) {
@@ -13,15 +14,15 @@ class AIService {
         this.isEnabled = true;
         console.log('✅ OpenAI API initialized successfully');
       } else {
-        console.warn('⚠️  OpenAI API key not found. AI Insights will be disabled.');
+        console.log('ℹ️  OpenAI API key not configured — using fallback AI insights');
       }
     } catch (error) {
-      console.warn('⚠️  Failed to initialize OpenAI API:', error.message);
+      console.log('ℹ️  OpenAI unavailable — using fallback AI insights');
     }
   }
 
   async getSpendingInsights(transactions, budgets = [], timeframe = 'month') {
-    if (!this.isEnabled) {
+    if (!this.isEnabled || this.quotaExhausted) {
       return this.getFallbackInsights(transactions, budgets);
     }
 
@@ -73,13 +74,13 @@ Response should be in JSON format with the following structure:
       return JSON.parse(response);
 
     } catch (error) {
-      console.error('Error generating AI insights:', error);
+      this.handleAIError(error, 'spending insights');
       return this.getFallbackInsights(transactions, budgets);
     }
   }
 
   async getBudgetRecommendations(transactions, currentBudgets = []) {
-    if (!this.isEnabled) {
+    if (!this.isEnabled || this.quotaExhausted) {
       return this.getFallbackBudgetRecommendations(transactions, currentBudgets);
     }
 
@@ -126,13 +127,13 @@ Please suggest budget recommendations in JSON format:
       return JSON.parse(response);
 
     } catch (error) {
-      console.error('Error generating budget recommendations:', error);
+      this.handleAIError(error, 'budget recommendations');
       return this.getFallbackBudgetRecommendations(transactions, currentBudgets);
     }
   }
 
   async getFinancialGoalInsights(transactions, goals = []) {
-    if (!this.isEnabled) {
+    if (!this.isEnabled || this.quotaExhausted) {
       return this.getFallbackGoalInsights(transactions, goals);
     }
 
@@ -182,8 +183,19 @@ Provide insights in JSON format:
       return JSON.parse(response);
 
     } catch (error) {
-      console.error('Error generating goal insights:', error);
+      this.handleAIError(error, 'goal insights');
       return this.getFallbackGoalInsights(transactions, goals);
+    }
+  }
+
+  handleAIError(error, context) {
+    if (error?.code === 'insufficient_quota' || error?.status === 429) {
+      if (!this.quotaExhausted) {
+        console.log('ℹ️  OpenAI quota exceeded — switching to fallback AI insights');
+        this.quotaExhausted = true;
+      }
+    } else {
+      console.log(`ℹ️  OpenAI unavailable for ${context} — using fallback`);
     }
   }
 

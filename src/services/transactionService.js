@@ -11,7 +11,8 @@ class TransactionService {
   async createTransaction(userId, transactionData) {
     const {
       category_id, amount, currency = 'USD', type, description,
-      transaction_date, is_recurring = false, recurring_frequency, notes
+      transaction_date, is_recurring = false, recurring_frequency, notes,
+      is_refund = false
     } = transactionData;
 
     // Verify category belongs to user
@@ -21,7 +22,8 @@ class TransactionService {
     }
 
     // Verify transaction type matches category type
-    if (category.type !== type) {
+    // Allow refunds: a refund on an expense category is valid (treated as negative expense / reversal)
+    if (!is_refund && category.type !== type) {
       throw new Error(`Transaction type must match category type (${category.type})`);
     }
 
@@ -32,7 +34,7 @@ class TransactionService {
       amount: parseFloat(amount),
       currency,
       type,
-      description: description?.trim() || null,
+      description: is_refund ? `[REFUND] ${(description?.trim() || 'Refund')}` : (description?.trim() || null),
       transaction_date,
       is_recurring,
       recurring_frequency: is_recurring ? recurring_frequency : null,

@@ -88,6 +88,9 @@ finance_tracker.db
 test_receipt.*
 migrate-sqlite-to-neon.js
 
+# Loom script (not for GitHub)
+LOOM_SCRIPT.md
+
 # OS generated files
 .DS_Store
 .DS_Store?

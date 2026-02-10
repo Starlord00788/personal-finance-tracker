@@ -19,6 +19,8 @@ const notificationRoutes = require('./src/routes/notificationRoutes');
 const oauthRoutes = require('./src/routes/oauthRoutes');
 const budgetRoutes = require('./src/routes/budgetRoutes');
 const aiRoutes = require('./src/routes/aiRoutes');
+const reportRoutes = require('./src/routes/reportRoutes');
+const statementRoutes = require('./src/routes/statementRoutes');
 
 // Import middleware
 const errorHandler = require('./src/middlewares/errorHandler');
@@ -35,13 +37,13 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net"],
       scriptSrcAttr: ["'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'", "https:", "http:"],
       fontSrc: ["'self'", "data:"],
       objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
+      mediaSrc: ["'self'", "data:"],
       frameSrc: ["'none'"],
     },
   },
@@ -143,6 +145,8 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/auth', oauthRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/statements', statementRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

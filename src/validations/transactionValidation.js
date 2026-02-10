@@ -11,6 +11,11 @@ const createTransactionValidation = [
     .isFloat({ min: 0.01 })
     .withMessage('Amount must be a positive number greater than 0'),
     
+  body('is_refund')
+    .optional()
+    .isBoolean()
+    .withMessage('is_refund must be true or false'),
+    
   body('currency')
     .optional()
     .isLength({ min: 3, max: 3 })

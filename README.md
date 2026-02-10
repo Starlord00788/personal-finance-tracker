@@ -10,6 +10,9 @@ A full-stack financial management application built with Node.js, Express.js, an
 - **Multi-Currency Support** — exchange rates and currency conversion
 - **Receipt Upload** — attach receipts to transactions
 - **AI Financial Insights** — powered by OpenAI GPT-3.5
+- **Financial Reports** — monthly, yearly, and custom date range reports with chart-ready data
+- **Bank Statement Import** — CSV upload with auto-categorization and duplicate detection
+- **Anomaly Detection** — statistical analysis of spending patterns (z-score, velocity, trends)
 - **Email Notifications** — budget alerts, welcome emails, monthly reports
 - **Interactive Dashboard** — single-page frontend with real-time data
 
@@ -102,6 +105,20 @@ Server runs at `http://localhost:3000`
 | GET | `/api/ai/budget-recommendations` | Budget recommendations |
 | POST | `/api/ai/goal-insights` | Financial goal analysis |
 | GET | `/api/ai/summary` | Financial summary |
+
+### Reports
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/reports/monthly/:year/:month` | Monthly report |
+| GET | `/api/reports/yearly/:year` | Yearly report |
+| GET | `/api/reports/custom?startDate&endDate` | Custom date range report |
+
+### Bank Statements
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/statements/preview` | Preview CSV before import |
+| POST | `/api/statements/import` | Import bank statement CSV |
+| GET | `/api/statements/anomalies` | Detect spending anomalies |
 
 ### Other
 | Method | Endpoint | Description |

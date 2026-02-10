@@ -784,6 +784,7 @@
                     else if (Array.isArray(data.data) && data.data[0] && data.data[0].category) dataType = 'budgets';
                     else if (data.data.transactions && data.data.summary && data.data.summary.total !== undefined) dataType = 'statements';
                     else if (data.data.total_recommendations !== undefined) dataType = 'budget-recommendations';
+                    else if (data.data.period && data.data.summary) dataType = 'reports';
                     else if (data.data.insights || data.data.recommendations || data.data.goalInsights || data.data.summary) dataType = 'ai-insights';
                     else if (data.data.filename || data.data.mimetype) dataType = 'receipts';
                     else if (data.data.healthy !== undefined || data.data.uptime !== undefined) dataType = 'health';
@@ -810,6 +811,8 @@
                         return formatStatementTable(data);
                     case 'budget-recommendations':
                         return formatBudgetRecommendationsTable(data);
+                    case 'reports':
+                        return formatReportTable(data);
                     case 'budgets':
                         return formatBudgetsTable(data);
                     case 'transactions':
@@ -933,6 +936,75 @@
             }
             
             html += '</table>';
+            return html;
+        }
+
+        function formatReportTable(data) {
+            const d = data.data;
+            const p = d.period || {};
+            const s = d.summary || {};
+            const isYearly = !!d.monthlyBreakdown;
+            const months = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            const title = isYearly ? `📊 Yearly Report — ${p.year}` : `📊 Monthly Report — ${months[p.month] || ''} ${p.year}`;
+
+            let html = `<h4 style="margin: 0 0 12px 0; color: #1a1a2e;">${title}</h4>`;
+
+            // Summary cards
+            html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;">';
+            html += `<div style="background:#d4edda;padding:12px;border-radius:8px;text-align:center;"><div style="font-size:12px;color:#155724;">Income</div><div style="font-size:20px;font-weight:700;color:#155724;">$${(s.totalIncome || 0).toLocaleString()}</div></div>`;
+            html += `<div style="background:#f8d7da;padding:12px;border-radius:8px;text-align:center;"><div style="font-size:12px;color:#721c24;">Expenses</div><div style="font-size:20px;font-weight:700;color:#721c24;">$${(s.totalExpenses || 0).toLocaleString()}</div></div>`;
+            html += `<div style="background:${s.netSavings >= 0 ? '#d4edda' : '#f8d7da'};padding:12px;border-radius:8px;text-align:center;"><div style="font-size:12px;color:#495057;">Net Savings</div><div style="font-size:20px;font-weight:700;color:${s.netSavings >= 0 ? '#155724' : '#721c24'};">$${(s.netSavings || 0).toLocaleString()}</div></div>`;
+            html += `<div style="background:#cce5ff;padding:12px;border-radius:8px;text-align:center;"><div style="font-size:12px;color:#004085;">Savings Rate</div><div style="font-size:20px;font-weight:700;color:#004085;">${s.savingsRate || 0}%</div></div>`;
+            html += `<div style="background:#e2e3e5;padding:12px;border-radius:8px;text-align:center;"><div style="font-size:12px;color:#383d41;">Transactions</div><div style="font-size:20px;font-weight:700;color:#383d41;">${s.transactionCount || 0}</div></div>`;
+            html += '</div>';
+
+            // Expense by category
+            if (d.expenseByCategory && d.expenseByCategory.length > 0) {
+                html += '<h5 style="margin:12px 0 6px;color:#495057;">💸 Expense Breakdown</h5>';
+                html += '<table><tr><th>Category</th><th>Amount</th><th>%</th></tr>';
+                d.expenseByCategory.forEach(c => {
+                    html += `<tr><td>${c.category}</td><td style="font-weight:600;color:#dc3545;">$${c.amount.toFixed(2)}</td><td>${c.percentage}%</td></tr>`;
+                });
+                html += '</table>';
+            }
+
+            // Income by category
+            if (d.incomeByCategory && d.incomeByCategory.length > 0) {
+                html += '<h5 style="margin:12px 0 6px;color:#495057;">💰 Income Breakdown</h5>';
+                html += '<table><tr><th>Category</th><th>Amount</th><th>%</th></tr>';
+                d.incomeByCategory.forEach(c => {
+                    html += `<tr><td>${c.category}</td><td style="font-weight:600;color:#28a745;">$${c.amount.toFixed(2)}</td><td>${c.percentage}%</td></tr>`;
+                });
+                html += '</table>';
+            }
+
+            // Top expenses
+            if (d.topExpenses && d.topExpenses.length > 0) {
+                html += '<h5 style="margin:12px 0 6px;color:#495057;">🔝 Top Expenses</h5>';
+                html += '<table><tr><th>#</th><th>Description</th><th>Amount</th><th>Category</th><th>Date</th></tr>';
+                d.topExpenses.forEach((t, i) => {
+                    const date = t.date instanceof Date ? t.date.toISOString().split('T')[0] : String(t.date || '').split('T')[0];
+                    html += `<tr><td>${i+1}</td><td>${t.description || '—'}</td><td style="font-weight:600;color:#dc3545;">$${t.amount.toFixed(2)}</td><td>${t.category || '—'}</td><td>${date}</td></tr>`;
+                });
+                html += '</table>';
+            }
+
+            // Monthly breakdown (yearly reports)
+            if (d.monthlyBreakdown && d.monthlyBreakdown.length > 0) {
+                html += '<h5 style="margin:12px 0 6px;color:#495057;">📅 Monthly Breakdown</h5>';
+                html += '<table><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Savings</th></tr>';
+                d.monthlyBreakdown.forEach(m => {
+                    const sav = (m.income || 0) - (m.expenses || 0);
+                    html += `<tr><td>${months[m.month] || m.month}</td><td style="color:#28a745;font-weight:600;">$${(m.income || 0).toFixed(2)}</td><td style="color:#dc3545;font-weight:600;">$${(m.expenses || 0).toFixed(2)}</td><td style="color:${sav >= 0 ? '#28a745' : '#dc3545'};font-weight:600;">$${sav.toFixed(2)}</td></tr>`;
+                });
+                html += '</table>';
+            }
+
+            // Empty state
+            if ((!d.expenseByCategory || d.expenseByCategory.length === 0) && (!d.incomeByCategory || d.incomeByCategory.length === 0) && s.transactionCount === 0) {
+                html += '<div style="text-align:center;padding:20px;color:#6c7a89;"><div style="font-size:28px;margin-bottom:8px;">📭</div><strong>No transactions found for this period.</strong><br><span style="font-size:12px;">Try a different month/year or add some transactions first.</span></div>';
+            }
+
             return html;
         }
 
@@ -2131,14 +2203,14 @@
             const year = document.getElementById('report-year').value;
             displayResult('dashboard-result', { success: true, message: '<span class="loading-spinner"></span> Generating monthly report...' }, true);
             const result = await makeRequest(`/reports/monthly/${year}/${month}`);
-            displayResult('dashboard-result', result, result.success);
+            displayResult('dashboard-result', result, result.success, 'reports');
         }
 
         async function loadYearlyReport() {
             const year = document.getElementById('report-year').value;
             displayResult('dashboard-result', { success: true, message: '<span class="loading-spinner"></span> Generating yearly report...' }, true);
             const result = await makeRequest(`/reports/yearly/${year}`);
-            displayResult('dashboard-result', result, result.success);
+            displayResult('dashboard-result', result, result.success, 'reports');
         }
 
         // ── Bank Statement Import ──

@@ -17,7 +17,7 @@
 
 - Health check: [`/health`](https://personal-finance-tracker-w443.onrender.com/health)
 - Interactive Dashboard: [`/`](https://personal-finance-tracker-w443.onrender.com)
-
+- Link to the Loom Video: (https://drive.google.com/file/d/1DD8_4qgCRlh0t2knW1QOARpyPbFLFz1c/view?usp=sharing)
 > ⚠️ Free-tier Render instances spin down after inactivity. First request may take ~30s to cold-start.
 
 ---
